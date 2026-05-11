@@ -19,6 +19,18 @@ def __getattr__(name):
         return module
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
+def _register_flagcx_connector():
+    from vllm.distributed.kv_transfer.kv_connector.factory import (
+        KVConnectorFactory,
+    )
+
+    for _alias in ("FlagCXConnector", "FlagcxConnector"):
+        if _alias not in KVConnectorFactory._registry:
+            KVConnectorFactory.register_connector(
+                _alias,
+                "vllm_fl.distributed.kv_transfer.flagcx_connector",
+                "FlagCXConnector",
+            )
 
 def _patch_transformers_compat():
     """Patch transformers compatibility for ALLOWED_LAYER_TYPES and tokenizer."""
@@ -32,6 +44,7 @@ def _patch_transformers_compat():
 def register():
     """Register the FL platform."""
     _patch_transformers_compat()
+    _register_flagcx_connector()
 
     # Model-specific platform patches
     from vllm_fl.patches.glm_moe_dsa import apply_platform_patches as glm5_platform
@@ -46,6 +59,8 @@ def register():
 
 def register_model():
     """Register the FL model."""
+    _register_flagcx_connector()
+
     from vllm import ModelRegistry
     import vllm.model_executor.models.qwen3_next as qwen3_next_module
 
